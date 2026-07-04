@@ -33,6 +33,15 @@ port of the original PICO-8 cart by Matt Thorson & Noel Berry.
   music tracks are pre-transcoded to `.caf` (`afconvert`) since AVFoundation has no Ogg Vorbis
   decoder on Apple platforms — sound effects stay as the original `.wav` files.
 
+- `ports/Darwin/Celeste.xcodeproj/` — native macOS and tvOS apps (mirroring junkbot-swift's
+  `Junkbot.xcodeproj`), reusing `CelesteScene`/`SpriteKitRenderer`/`AudioBackend`/`KeyboardInput`
+  directly from `CelesteMobile.swiftpm/Sources/CelesteMobile/` (referenced in place, no copies or
+  symlinks needed since a plain Xcode project has no self-containment restriction) plus a small
+  set of Darwin-target-only files in `Sources/CelesteDarwin/`: `AppDelegate_macOS.swift` (creates
+  the `NSWindow`/`SKView` directly), `AppDelegate_tvOS.swift` + `GameViewController.swift` (the
+  `UIKit`/`SKView` equivalent). Both targets depend on `CelesteCore` via a local Swift package
+  reference to the repo root. iOS has no target here — that's the App Playground above.
+
 ## Running
 
 Desktop (SDL2):
@@ -44,7 +53,10 @@ swift run
 
 Controls: arrow keys to move, Z/C/N to jump, X/V/M to dash.
 
-Darwin (SpriteKit): open `ports/Darwin/CelesteMobile.swiftpm` in Xcode or the Swift Playgrounds
-app and run it (iOS/iPadOS simulator or device), or `cd ports/Darwin/CelesteMobile.swiftpm &&
-swift run` on macOS. Same keyboard controls as above, plus an on-screen D-pad/jump/dash overlay
-on touch devices.
+Darwin (SpriteKit, iOS/iPadOS): open `ports/Darwin/CelesteMobile.swiftpm` in Xcode or the Swift
+Playgrounds app and run it (iOS/iPadOS simulator or device), or `cd
+ports/Darwin/CelesteMobile.swiftpm && swift run` on macOS. Same keyboard controls as above, plus
+an on-screen D-pad/jump/dash overlay on touch devices.
+
+Darwin (SpriteKit, macOS/tvOS): open `ports/Darwin/Celeste.xcodeproj` in Xcode and run the
+`Celeste-macOS` or `Celeste-tvOS` scheme.

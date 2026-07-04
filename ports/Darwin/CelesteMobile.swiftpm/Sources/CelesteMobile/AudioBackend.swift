@@ -16,10 +16,20 @@ final class AudioBackend: CelesteAudio {
     private var chunksById: [Int: AVAudioPlayer] = [:]
     private var currentMusic: AVAudioPlayer?
 
+    /// App Playground (`.iOSApplication`) targets merge `resources:` straight into the app's
+    /// main bundle rather than generating a separate resource bundle + `Bundle.module`
+    /// accessor the way a plain SwiftPM executable target does - `Bundle.module` doesn't even
+    /// exist here. Mirrors junkbot-swift's `ports/Darwin/.../GameShell.swift` (`Bundle.main
+    /// .resourceURL`) for the same reason.
+    private static let audioDirectory: URL = {
+        let resourceRoot = Bundle.main.resourceURL ?? Bundle.main.bundleURL
+        return resourceRoot.appendingPathComponent("Audio")
+    }()
+
     init() {
         let musicIds = [0, 10, 20, 30, 40]
         for id in musicIds {
-            guard let url = Bundle.module.url(forResource: "mus\(id)", withExtension: "caf") else { continue }
+            let url = Self.audioDirectory.appendingPathComponent("mus\(id).caf")
             guard let player = try? AVAudioPlayer(contentsOf: url) else { continue }
             player.numberOfLoops = -1
             player.prepareToPlay()
@@ -28,7 +38,7 @@ final class AudioBackend: CelesteAudio {
 
         let sfxIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 16, 23, 35, 37, 38, 40, 50, 51, 54, 55]
         for id in sfxIds {
-            guard let url = Bundle.module.url(forResource: "snd\(id)", withExtension: "wav") else { continue }
+            let url = Self.audioDirectory.appendingPathComponent("snd\(id).wav")
             guard let player = try? AVAudioPlayer(contentsOf: url) else { continue }
             player.prepareToPlay()
             chunksById[id] = player

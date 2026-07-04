@@ -3,7 +3,7 @@
 // callback, which map tile spawns it, and whether it should be skipped once
 // its room's fruit has already been collected.
 
-public enum ObjType: Int, CaseIterable {
+public enum ObjType: Int, CaseIterable, Sendable {
     case player
     case playerSpawn
     case spring
@@ -24,7 +24,7 @@ public enum ObjType: Int, CaseIterable {
     case roomTitle
 }
 
-struct ObjTypeInfo {
+struct ObjTypeInfo: Sendable {
     let tile: Int
     let hasInit: Bool
     let hasUpdate: Bool
