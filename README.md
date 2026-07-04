@@ -3,6 +3,16 @@
 Celeste Classic ported to Swift, from the [ccleste](https://github.com/lemon-sherbet/ccleste) C
 port of the original PICO-8 cart by Matt Thorson & Noel Berry.
 
+## Ports
+
+| Port | Platforms | Project |
+| --- | --- | --- |
+| SDL2 | Linux, macOS | `ports/SDL2/Package.swift` |
+| Darwin (App Playground) | iOS, iPadOS | `ports/Darwin/CelesteMobile.swiftpm` |
+| Darwin (Xcode) | macOS, tvOS | `ports/Darwin/Celeste.xcodeproj` |
+
+All three render through the same `CelesteEngine`/`CelesteRenderer` boundary in `Sources/CelesteCore/` — see below.
+
 ## Structure
 
 - `Sources/CelesteCore/` — the gameplay engine, a line-by-line port of `celeste.c`. Platform
