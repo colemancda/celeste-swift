@@ -7,6 +7,7 @@ import CelesteCore
 /// bottom-left and jump/dash buttons in the bottom-right, drawn directly in the scene's own
 /// coordinate space (fixed logical size, same as the framebuffer display node) so they scale
 /// and position consistently regardless of the device's actual screen size/aspect ratio.
+@MainActor
 final class TouchControls {
     private struct Zone {
         let button: CelesteButton
