@@ -29,9 +29,10 @@ final class CelesteScene: SKScene {
 
         displayNode.size = size
         displayNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
-        // CGImage rows run top-down, but SKTexture treats (0, 0) as bottom-left - flipping the
-        // node vertically corrects the otherwise-upside-down framebuffer image.
-        displayNode.yScale = -1
+        // No manual Y-flip needed here: SKTexture(cgImage:) already reorients a top-down CGImage
+        // to display right-side up on a standard (bottom-left-origin) SKSpriteNode. An earlier
+        // version added `displayNode.yScale = -1` on top of that, which double-flipped the frame
+        // and rendered the game upside down.
         addChild(displayNode)
 
         #if canImport(UIKit)
