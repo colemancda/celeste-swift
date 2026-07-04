@@ -76,3 +76,47 @@ jobs:
         xcodebuild build -project ports/Darwin/Celeste.xcodeproj -scheme Celeste-tvOS \
           -configuration Debug -destination "generic/platform=tvOS Simulator" \
           -skipPackagePluginValidation
+
+  n3ds:
+    name: Nintendo 3DS (build + upload ROM)
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # devkitPro's 3ds-dev group pulls in the ARM11 cross-compiler, libctru, and
+    # the bin2s/3dsxtool/smdhtool tools ports/3DS/Makefile depends on.
+    - name: Install devkitPro (3ds-dev)
+      run: |
+        curl -L https://github.com/devkitPro/pacman/releases/latest/download/devkitpro-pacman-installer.pkg -o /tmp/devkitpro-pacman-installer.pkg
+        sudo installer -pkg /tmp/devkitpro-pacman-installer.pkg -target /
+        sudo dkp-pacman -Sy --noconfirm
+        sudo dkp-pacman -S --noconfirm 3ds-dev
+
+    # Armv6-none-none-eabi Embedded stdlib support (matching this port's build target) needs a
+    # recent-enough Swift toolchain; resolve "latest" nightly at run time rather than pinning a
+    # date, since snapshots get pruned.
+    - name: Install Swift nightly toolchain
+      run: |
+        curl -sL https://download.swift.org/development/xcode/latest-build.yml -o /tmp/latest-build.yml
+        SNAPSHOT_DIR=$(awk -F': ' '/^dir:/{print $2}' /tmp/latest-build.yml)
+        SNAPSHOT_PKG=$(awk -F': ' '/^download:/{print $2}' /tmp/latest-build.yml)
+        curl -L "https://download.swift.org/development/xcode/${SNAPSHOT_DIR}/${SNAPSHOT_PKG}" -o /tmp/swift-toolchain.pkg
+        sudo installer -pkg /tmp/swift-toolchain.pkg -target /
+        TOOLCHAIN_DIR=$(ls -d /Library/Developer/Toolchains/swift-*.xctoolchain | head -1)
+        echo "SWIFTC=$TOOLCHAIN_DIR/usr/bin/swiftc" >> "$GITHUB_ENV"
+
+    - name: Build Celeste.3dsx
+      env:
+        DEVKITPRO: /opt/devkitpro
+        DEVKITARM: /opt/devkitpro/devkitARM
+      run: |
+        export PATH="$DEVKITPRO/tools/bin:$DEVKITARM/bin:$PATH"
+        make -C ports/3DS SWIFTC="$SWIFTC"
+
+    - name: Upload ROM
+      uses: actions/upload-artifact@v4
+      with:
+        name: celeste-3ds
+        path: ports/3DS/Celeste.3dsx
+        if-no-files-found: error

@@ -3,8 +3,6 @@
 // all gameplay state and drives it through `start()` / `update()` / `draw()`;
 // a host port supplies a `CelesteRenderer` + `CelesteAudio` implementation and
 // pumps `input` once per frame.
-import Foundation
-
 public final class CelesteEngine {
     public static let maxObjects = 30
     public static let fruitCount = 30
@@ -881,7 +879,11 @@ public final class CelesteEngine {
     private func messageDraw(_ this: Entity) {
         this.text = "-- celeste mountain --#this memorial to those# perished on the climb"
         if objCheck(this, .player, 4, 0) {
-            let chars = Array(this.text)
+            // ASCII-only text, so plain `Unicode.Scalar`s (not `Character`/grapheme
+            // clusters) are all that's needed - avoids linking the stdlib's Unicode
+            // grapheme-breaking tables, which Embedded Swift targets like ports/3DS
+            // don't provide.
+            let chars = Array(this.text.unicodeScalars)
             if this.index < Float(chars.count) {
                 this.index += 0.5
                 if this.index >= this.last + 1 {
@@ -1343,13 +1345,20 @@ public final class CelesteEngine {
         }
     }
 
+    /// Zero-padded 2-digit formatting, avoiding `String(format:)` (needs
+    /// Foundation, unavailable when this file is built for Embedded Swift
+    /// targets like `ports/3DS`).
+    private func pad2(_ n: Int) -> String {
+        n < 10 ? "0\(n)" : "\(n)"
+    }
+
     private func drawTime(_ x: Float, _ y: Float) {
         let s = seconds
         let m = minutes % 60
         let h = minutes / 60
 
         renderer.rectfill(x0: x, y0: y, x1: x + 32, y1: y + 6, color: 0)
-        let str = String(format: "%.2d:%.2d:%.2d", h, m, s)
+        let str = "\(pad2(h)):\(pad2(m)):\(pad2(s))"
         renderer.print(str, x: x + 1, y: y + 1, color: 7)
     }
 
@@ -1434,10 +1443,10 @@ public final class CelesteEngine {
 
     private func tileFlagAt(_ x: Float, _ y: Float, _ w: Int, _ h: Int, _ flag: Int) -> Bool {
         var i = Int(max(0, p8flr(x / 8)))
-        let iMax = Int(min(15, floor((x + Float(w) - 1) / 8)))
+        let iMax = Int(min(15, p8flr((x + Float(w) - 1) / 8)))
         while i <= iMax {
             var j = Int(max(0, p8flr(y / 8)))
-            let jMax = Int(min(15, floor((y + Float(h) - 1) / 8)))
+            let jMax = Int(min(15, p8flr((y + Float(h) - 1) / 8)))
             while j <= jMax {
                 if fget(tileAt(i, j), flag) { return true }
                 j += 1
@@ -1453,10 +1462,10 @@ public final class CelesteEngine {
 
     private func spikesAt(_ x: Float, _ y: Float, _ w: Int, _ h: Int, _ xspd: Float, _ yspd: Float) -> Bool {
         var i = Int(max(0, p8flr(x / 8)))
-        let iMax = Int(min(15, floor((x + Float(w) - 1) / 8)))
+        let iMax = Int(min(15, p8flr((x + Float(w) - 1) / 8)))
         while i <= iMax {
             var j = Int(max(0, p8flr(y / 8)))
-            let jMax = Int(min(15, floor((y + Float(h) - 1) / 8)))
+            let jMax = Int(min(15, p8flr((y + Float(h) - 1) / 8)))
             while j <= jMax {
                 let tile = tileAt(i, j)
                 if tile == 17 && (PicoMath.modulo(y + Float(h) - 1, 8) >= 6 || y + Float(h) == Float(j * 8 + 8)) && yspd >= 0 {
