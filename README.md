@@ -10,8 +10,9 @@ port of the original PICO-8 cart by Matt Thorson & Noel Berry.
 | SDL2 | Linux, macOS | `ports/SDL2/Package.swift` |
 | Darwin (App Playground) | iOS, iPadOS | `ports/Darwin/CelesteMobile.swiftpm` |
 | Darwin (Xcode) | macOS, tvOS | `ports/Darwin/Celeste.xcodeproj` |
+| 3DS | Nintendo 3DS | `ports/3DS/Makefile` |
 
-All three render through the same `CelesteEngine`/`CelesteRenderer` boundary in `Sources/CelesteCore/` — see below.
+All four render through the same `CelesteEngine`/`CelesteRenderer` boundary in `Sources/CelesteCore/` — see below.
 
 ## Structure
 
@@ -52,6 +53,23 @@ All three render through the same `CelesteEngine`/`CelesteRenderer` boundary in 
   `UIKit`/`SKView` equivalent). Both targets depend on `CelesteCore` via a local Swift package
   reference to the repo root. iOS has no target here — that's the App Playground above.
 
+- `ports/3DS/` — a real Nintendo 3DS homebrew `.3dsx`, built with **Embedded Swift**
+  (`-enable-experimental-feature Embedded`, targeting `armv6-none-none-eabi`) and linked against
+  libctru via devkitARM — mirrors [junkbot-swift's `ports/3DS`](https://github.com/colemancda/junkbot-swift/pull/12).
+  `Renderer3DS` implements `CelesteRenderer` as a 128x128 RGB565 canvas (Celeste's native
+  resolution, drawn 1:1 — the largest integer scale that fits the top screen's 240px height),
+  presented via a small C shim (`common/shim.c`) that transposes it into the top LCD's
+  column-major hardware framebuffer; the bottom screen shows a plain libctru text console with
+  controls. `Audio3DS` plays PCM16 clips through NDSP. Since `Sources/CelesteCore/`'s
+  sprite/font/tilemap data is already tiny Swift array literals (not needed as bin2s blobs like
+  junkbot's larger sprite sheets), the only build-time asset step is `tools/gen_audio.py`
+  (`sndN.wav`/`musN.ogg` -> PCM16 `sfx.bin`/`music.bin`, the music step needs macOS's `afconvert`
+  to decode Ogg Vorbis). Getting `CelesteCore` itself building for Embedded Swift only needed two
+  small changes: dropping its one `Foundation` dependency (`String(format:)`, `fmodf`/`sinf` — the
+  latter now imports libctru's `<math.h>` instead when `Foundation` isn't available) and swapping
+  one `[Character]` string-iteration for `unicodeScalars` (grapheme-cluster breaking pulls in
+  Unicode tables the embedded stdlib doesn't ship).
+
 ## Running
 
 Desktop (SDL2):
@@ -70,3 +88,16 @@ an on-screen D-pad/jump/dash overlay on touch devices.
 
 Darwin (SpriteKit, macOS/tvOS): open `ports/Darwin/Celeste.xcodeproj` in Xcode and run the
 `Celeste-macOS` or `Celeste-tvOS` scheme.
+
+3DS: requires [devkitPro](https://devkitpro.org/) (`3ds-dev`, i.e. devkitARM + libctru + 3ds-tools)
+and a Swift toolchain with an `armv6-none-none-eabi` Embedded stdlib slice.
+
+```sh
+export DEVKITPRO=/opt/devkitpro DEVKITARM=$DEVKITPRO/devkitARM
+cd ports/3DS
+make
+```
+
+Produces `Celeste.3dsx`; run it on hardware or in [Citra](https://citra-emu.org/)/[Azahar](https://github.com/azahar-emu/azahar).
+Controls: Circle Pad/D-pad/C-stick to move, A to jump, B or X to dash, START to return to the
+title screen.

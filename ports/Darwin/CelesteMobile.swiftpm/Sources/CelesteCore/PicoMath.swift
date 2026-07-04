@@ -2,7 +2,14 @@
 // carts, plus small helpers (appr/sign/clamp/maybe) ported verbatim from
 // celeste.c so that gameplay timing/randomness matches the original.
 
+// fmodf/sinf come from Foundation normally, or from libctru's transitively
+// included <math.h> when this file is built for Embedded Swift targets (see
+// ports/3DS/common/ctru_umbrella.h) - whichever module is actually available.
+#if canImport(Foundation)
 import Foundation
+#elseif canImport(CTRU)
+import CTRU
+#endif
 
 struct Pico8RNG {
     var seedLo: UInt32 = 0
