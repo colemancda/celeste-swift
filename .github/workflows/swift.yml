@@ -1,0 +1,47 @@
+name: Swift
+on: [push, pull_request]
+jobs:
+
+  linux-sdl2:
+    name: Linux (SDL2 port)
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Swift Version
+      run: swift --version
+    - name: Install SDL2 dependencies
+      run: apt-get update -y && apt-get install -y libsdl2-dev libsdl2-mixer-dev pkg-config
+    - name: Build
+      run: swift build --package-path ports/SDL2 -c debug --product CelesteSDL2
+
+  macos-sdl2:
+    name: macOS (SDL2 port)
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Swift Version
+      run: swift --version
+    - name: Install SDL2 dependencies
+      run: brew install sdl2 sdl2_mixer
+    - name: Build
+      run: swift build --package-path ports/SDL2 -c debug --product CelesteSDL2
+
+  darwin-ios:
+    name: iOS (Swift Playground)
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Xcode Version
+      run: xcodebuild -version
+    - name: Build CelesteMobile
+      # No `-project`: this is a `.swiftpm` App Playground, not an Xcode project/workspace -
+      # `xcodebuild` auto-detects it from the current directory, the same way it auto-detects a
+      # plain `Package.swift`.
+      run: |
+        cd ports/Darwin/CelesteMobile.swiftpm
+        xcodebuild build -scheme CelesteMobile -destination "generic/platform=iOS Simulator" \
+          -skipPackagePluginValidation
