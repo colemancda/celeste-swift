@@ -107,10 +107,13 @@ rock: swift sync
 	@echo "built $(BUILD)/celeste.rock"
 
 # UI simulator (host build; uses celeste_stub.c, needs SDL on the host).
+# Rockbox's configure hardcodes gcc-16/gcc-ar-16/cpp-16 on Darwin whenever it
+# detects Clang, assuming Homebrew GCC (`brew install gcc`) is on PATH.
 sim: sync
 	mkdir -p rockbox/build-sim
-	cd rockbox/build-sim && { [ -f Makefile ] || \
-	    ../tools/configure --target=ipodnano2g --type=s; } && $(MAKE)
+	PATH="/opt/homebrew/bin:$$PATH" sh -c ' \
+	    cd rockbox/build-sim && { [ -f Makefile ] || \
+	        ../tools/configure --target=ipodnano2g --type=s; } && $(MAKE)'
 
 install: $(BUILD)/celeste.rock
 	@test -n "$(IPOD)" || { echo "usage: make install IPOD=/Volumes/<ipod>"; exit 1; }
