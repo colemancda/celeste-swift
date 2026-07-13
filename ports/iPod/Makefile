@@ -102,6 +102,11 @@ rockbox-tree:
 ifeq ($(HOST_OS),Linux)
 
 toolchain: rockbox-tree
+	@# rockboxdev.sh resolves its dirs with `readlink -f`, which fails --
+	@# silently, thanks to the script's set -e -- when more than the final
+	@# path component is missing (i.e. on any machine where RBDEV_PREFIX
+	@# doesn't exist yet, like a fresh CI runner on a cache miss).
+	mkdir -p $(RBDEV_PREFIX)/dl
 	export MAKEFLAGS=-j$$(nproc); \
 	yes "" | rockbox/tools/rockboxdev.sh --target=a --prefix=$(RBDEV_PREFIX) \
 	    --dlwhere=$(RBDEV_PREFIX)/dl --builddir=/tmp/rbbuild
