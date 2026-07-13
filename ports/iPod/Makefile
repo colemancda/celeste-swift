@@ -114,6 +114,11 @@ sim: sync
 	PATH="/opt/homebrew/bin:$$PATH" sh -c ' \
 	    cd rockbox/build-sim && { [ -f Makefile ] || \
 	        ../tools/configure --target=ipodnano2g --type=s; } && $(MAKE)'
+	@# rockboxui reads plugins from simdisk/.rockbox/rocks (its simulated
+	@# device root), which the plugin build alone doesn't populate.
+	mkdir -p rockbox/build-sim/simdisk/.rockbox/rocks/games
+	cp rockbox/build-sim/apps/plugins/celeste/celeste.rock \
+	    rockbox/build-sim/simdisk/.rockbox/rocks/games/
 
 install: $(BUILD)/celeste.rock
 	@test -n "$(IPOD)" || { echo "usage: make install IPOD=/Volumes/<ipod>"; exit 1; }
