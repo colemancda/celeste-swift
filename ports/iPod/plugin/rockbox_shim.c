@@ -273,12 +273,21 @@ float fmodf(float x, float y)
 
     /* Repeatedly subtract the largest power-of-two multiple of |y| that
      * fits: t doubles exactly in binary FP and each subtraction is exact,
-     * so this converges without drift (values in this game are tiny). */
-    while (ax >= ay) {
-        float t = ay;
-        while (ax - t >= t)
-            t += t;
-        ax -= t;
+     * so this converges without drift (values in this game are tiny).
+     * Both loops are iteration-capped: a float's exponent range bounds the
+     * true number of doublings/subtractions well under 64, so the caps
+     * never fire for real inputs -- they exist so a pathological (or
+     * simply unanticipated) input degrades to an approximate result
+     * instead of hanging the plugin's single thread forever. */
+    {
+        int outer = 64;
+        while (ax >= ay && outer-- > 0) {
+            float t = ay;
+            int inner = 64;
+            while (ax - t >= t && inner-- > 0)
+                t += t;
+            ax -= t;
+        }
     }
     return (x < 0.0f) ? -ax : ax;
 }
