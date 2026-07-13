@@ -15,12 +15,17 @@
 
 #include "plugin.h"
 
+/* mixer.c -- exercised directly here (bypassing Swift, which isn't present
+ * in this build) so the SFX mixer can be verified in the simulator. */
+extern void rb_audio_sfx(int id);
+
 #define GAME_W 128
 #define GAME_H 128
 
 static unsigned short *fb;
 static unsigned frame_no;
 static int px = GAME_W / 2, py = GAME_H / 2;
+static unsigned char prev_buttons;
 
 int celeste_shim_init(void)
 {
@@ -60,6 +65,14 @@ int celeste_frame(unsigned char buttons)
             if (x >= 0 && x < GAME_W && y >= 0 && y < GAME_H)
                 fb[y * GAME_W + x] =
                     (buttons & ((1 << 4) | (1 << 5))) ? 0xffff : 0x0000;
+
+    /* jump/dash edges fire a couple of sfx ids -- a quick way to confirm
+     * the mixer + sfx.bin loading work without needing hardware. */
+    if ((buttons & (1 << 4)) && !(prev_buttons & (1 << 4)))
+        rb_audio_sfx(1); /* jump */
+    if ((buttons & (1 << 5)) && !(prev_buttons & (1 << 5)))
+        rb_audio_sfx(0); /* dash */
+    prev_buttons = buttons;
 
     return 0;
 }
