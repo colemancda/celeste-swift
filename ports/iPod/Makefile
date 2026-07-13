@@ -49,7 +49,9 @@ CORE_SWIFT := $(wildcard $(REPO_ROOT)/Sources/CelesteCore/*.swift) \
               $(wildcard $(REPO_ROOT)/Sources/CelesteCore/Generated/*.swift)
 PORT_SWIFT := $(wildcard source/*.swift)
 
-.PHONY: all swift toolchain rockbox-tree sync rock sim install clean distclean
+SFX_WAV := $(wildcard $(REPO_ROOT)/ports/SDL2/Sources/CelesteSDL2/Resources/data/snd*.wav)
+
+.PHONY: all swift audio toolchain rockbox-tree sync rock sim run-sim install clean distclean
 
 all: swift
 
@@ -73,6 +75,16 @@ $(BUILD)/libceleste.a: $(BUILD)/celeste.swift.o scripts/check-undefined.sh
 swift: $(BUILD)/libceleste.a
 
 #---------------------------------------------------------------------------------
+# SFX assets: sfx.bin (installed to device/sim disk, not linked into the
+# .rock) + audio_tables.h (tiny, linked into mixer.c). See tools/gen_audio.py
+# and ports/iPod/README.md's phased audio plan.
+#---------------------------------------------------------------------------------
+$(BUILD)/audio_tables.h $(BUILD)/sfx.bin: tools/gen_audio.py $(SFX_WAV) | $(BUILD)
+	python3 tools/gen_audio.py $(REPO_ROOT) $(BUILD)
+
+audio: $(BUILD)/audio_tables.h $(BUILD)/sfx.bin
+
+#---------------------------------------------------------------------------------
 # Stage 2: Rockbox. The toolchain is built once into the named Docker volume;
 # the .rock build reuses it, mounting this repo's pinned Rockbox checkout.
 #---------------------------------------------------------------------------------
@@ -89,7 +101,7 @@ toolchain: rockbox-tree
 	    yes "" | /rockbox/tools/rockboxdev.sh --target=a --prefix=/opt/rbdev \
 	        --dlwhere=/opt/rbdev/dl --builddir=/tmp/rbbuild'
 
-sync: rockbox-tree
+sync: rockbox-tree audio
 	sh scripts/sync-plugin.sh $(abspath rockbox)
 
 rock: swift sync
@@ -121,6 +133,8 @@ sim: sync
 	mkdir -p rockbox/build-sim/simdisk/.rockbox/rocks/games
 	cp rockbox/build-sim/apps/plugins/celeste/celeste.rock \
 	    rockbox/build-sim/simdisk/.rockbox/rocks/games/
+	mkdir -p rockbox/build-sim/simdisk/.rockbox/celeste
+	cp $(BUILD)/sfx.bin rockbox/build-sim/simdisk/.rockbox/celeste/
 
 # Build (if needed) and launch rockboxui from the right directory --
 # scripts/run-sim.sh exists because rockboxui's virtual disk path is
@@ -128,10 +142,12 @@ sim: sync
 run-sim: sim
 	sh scripts/run-sim.sh
 
-install: $(BUILD)/celeste.rock
+install: $(BUILD)/celeste.rock $(BUILD)/sfx.bin
 	@test -n "$(IPOD)" || { echo "usage: make install IPOD=/Volumes/<ipod>"; exit 1; }
 	cp $(BUILD)/celeste.rock "$(IPOD)/.rockbox/rocks/games/"
-	@echo "installed to $(IPOD)/.rockbox/rocks/games/celeste.rock"
+	mkdir -p "$(IPOD)/.rockbox/celeste"
+	cp $(BUILD)/sfx.bin "$(IPOD)/.rockbox/celeste/"
+	@echo "installed to $(IPOD)/.rockbox/rocks/games/celeste.rock + $(IPOD)/.rockbox/celeste/sfx.bin"
 
 clean:
 	rm -rf $(BUILD)
