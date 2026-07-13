@@ -10,8 +10,8 @@
 import Foundation
 #elseif canImport(CTRU)
 import CTRU
-#elseif canImport(RB)
-import RB
+#elseif canImport(CRockbox)
+import CRockbox
 #endif
 
 struct Pico8RNG {
