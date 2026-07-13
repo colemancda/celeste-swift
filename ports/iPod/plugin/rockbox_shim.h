@@ -2,7 +2,7 @@
  * rockbox_shim.h -- the C surface CelesteCore's Embedded Swift sees on Rockbox.
  *
  * This header is parsed twice, by two different compilers:
- *   1. swiftc's Clang importer (via module.modulemap, as the `RB` module,
+ *   1. swiftc's Clang importer (via module.modulemap, as the `CRockbox` module,
  *      -ffreestanding, armv4t-none-none-eabi) when compiling the engine, and
  *   2. arm-elf-eabi-gcc when compiling rockbox_shim.c inside the Rockbox tree.
  * So it must stay self-contained: no plugin.h, no libc headers beyond what a
@@ -13,7 +13,7 @@
 #define CELESTE_ROCKBOX_SHIM_H
 
 /* libm gaps: Rockbox has no libm, so rockbox_shim.c carries small soft-float
- * implementations. PicoMath.swift only calls sinf/fmodf (see the canImport(RB)
+ * implementations. PicoMath.swift only calls sinf/fmodf (see the canImport(CRockbox)
  * branch there); floorf is declared for completeness. */
 float sinf(float x);
 float fmodf(float x, float y);
