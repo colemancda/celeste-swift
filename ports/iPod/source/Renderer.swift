@@ -1,5 +1,3 @@
-import RB
-
 /// Software rasterizer for the iPod Nano 2G's LCD: executes `CelesteEngine`'s
 /// `spr`/`rectfill`/`circfill`/`print`/`line`/`pal`/`camera` calls into a
 /// 128x128 row-major RGB565 canvas (Celeste Classic's native PICO-8
