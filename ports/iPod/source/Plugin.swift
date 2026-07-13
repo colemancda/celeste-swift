@@ -1,5 +1,3 @@
-import RB
-
 //---------------------------------------------------------------------------------
 //
 //  Celeste Classic for iPod Nano 2G -- Embedded Swift compiled for
