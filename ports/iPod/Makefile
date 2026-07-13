@@ -93,6 +93,7 @@ sync: rockbox-tree
 	sh scripts/sync-plugin.sh $(abspath rockbox)
 
 rock: swift sync
+	sh scripts/clean-host-tools.sh
 	$(DOCKER) run --rm -v $(DOCKER_VOLUME):/opt/rbdev \
 	    -v $(abspath rockbox):/rockbox $(DOCKER_IMAGE) bash -c '\
 	    set -e; apt-get update -qq; \
@@ -110,6 +111,7 @@ rock: swift sync
 # Rockbox's configure hardcodes gcc-16/gcc-ar-16/cpp-16 on Darwin whenever it
 # detects Clang, assuming Homebrew GCC (`brew install gcc`) is on PATH.
 sim: sync
+	sh scripts/clean-host-tools.sh
 	mkdir -p rockbox/build-sim
 	PATH="/opt/homebrew/bin:$$PATH" sh -c ' \
 	    cd rockbox/build-sim && { [ -f Makefile ] || \
