@@ -257,7 +257,16 @@ float fmodf(float x, float y)
     float ax = (x < 0.0f) ? -x : x;
     float ay = (y < 0.0f) ? -y : y;
 
-    if (y == 0.0f || x != x || y != y || ax == ax + ax) /* y==0, NaN, inf */
+    /* y==0, NaN, or |x| infinite. NOTE: this used to test infinity as
+     * `ax == ax + ax`, which is also true at ax==0 (0==0) -- fmodf(0, y)
+     * returned NaN on every call, and PicoMath.sin(0) (the very first
+     * angle in killPlayer's death-particle spawn loop, called on every
+     * player death) hit it every time, injecting NaN into that particle's
+     * velocity and eventually tripping an Int(Float) precondition trap in
+     * RockboxRenderer.rectfill a few frames later. `ax * 0.0f != 0.0f` is
+     * false at ax==0 (0*0==0) and true only for a true infinity
+     * (inf*0==NaN, and NaN != NaN). */
+    if (y == 0.0f || x != x || y != y || (ax * 0.0f) != 0.0f)
         return 0.0f / 0.0f;
     if (ax < ay)
         return x;
