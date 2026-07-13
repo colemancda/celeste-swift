@@ -103,7 +103,7 @@ rock: swift sync
 	    [ -f Makefile ] || ../tools/configure --target=ipodnano2g --type=n; \
 	    make -j$$(nproc) rocks; \
 	    arm-elf-eabi-size apps/plugins/celeste.elf 2>/dev/null || true'
-	cp rockbox/build-nano2g/apps/plugins/celeste.rock $(BUILD)/
+	cp rockbox/build-nano2g/apps/plugins/celeste/celeste.rock $(BUILD)/
 	@echo "built $(BUILD)/celeste.rock"
 
 # UI simulator (host build; uses celeste_stub.c, needs SDL on the host).
