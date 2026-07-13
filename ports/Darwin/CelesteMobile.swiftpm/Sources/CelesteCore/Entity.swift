@@ -140,4 +140,61 @@ public final class Entity {
         e.show = show
         return e
     }
+
+    /// Restores every field to its `Entity()` default in place, reusing this
+    /// instance's own storage -- including the `hair`/`particles` backing
+    /// arrays, mutated element-by-element rather than replaced -- instead of
+    /// allocating a fresh `Entity`. `destroyObject` calls this so that a
+    /// death (and every smoke particle finishing its animation) doesn't
+    /// churn the heap on targets with a small, fixed allocator arena.
+    func reset() {
+        active = false
+        id = 0
+        type = .player
+        collideable = true
+        solids = true
+        spr = 0
+        flipX = false
+        flipY = false
+        x = 0
+        y = 0
+        hitbox = HitBox(x: 0, y: 0, w: 8, h: 8)
+        spd = Vec()
+        rem = Vec()
+        pJump = false
+        pDash = false
+        grace = 0
+        jbuffer = 0
+        djump = 0
+        dashTime = 0
+        dashEffectTime = 0
+        dashTarget = Vec()
+        dashAccel = Vec()
+        sprOff = 0
+        wasOnGround = false
+        for i in hair.indices { hair[i] = Hair() }
+        state = 0
+        delay = 0
+        target = Vec()
+        hideIn = 0
+        hideFor = 0
+        timer = 0
+        offset = 0
+        start = 0
+        off = 0
+        fly = false
+        step = 0
+        sfxDelay = 0
+        duration = 0
+        flash = 0
+        last = 0
+        dir = 0
+        text = ""
+        index = 0
+        off2 = VecI()
+        for i in particles.indices { particles[i] = Particle() }
+        particleCount = 0
+        score = 0
+        show = false
+    }
 }
