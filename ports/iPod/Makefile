@@ -36,7 +36,7 @@ BUILD     := build
 
 #---------------------------------------------------------------------------------
 # Embedded Swift flags: like the 3DS port's, but ARMv4T soft-float and importing
-# the tiny RB shim module instead of libctru.
+# the tiny CRockbox shim module instead of libctru.
 #---------------------------------------------------------------------------------
 SWIFTFLAGS := -target armv4t-none-none-eabi \
               -enable-experimental-feature Embedded \
