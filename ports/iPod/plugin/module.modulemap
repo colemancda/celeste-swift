@@ -1,0 +1,4 @@
+module RB {
+    header "rockbox_shim.h"
+    export *
+}
