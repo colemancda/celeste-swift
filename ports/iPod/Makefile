@@ -120,6 +120,12 @@ sim: sync
 	cp rockbox/build-sim/apps/plugins/celeste/celeste.rock \
 	    rockbox/build-sim/simdisk/.rockbox/rocks/games/
 
+# Build (if needed) and launch rockboxui from the right directory --
+# scripts/run-sim.sh exists because rockboxui's virtual disk path is
+# relative to its launch cwd, not its own location.
+run-sim: sim
+	sh scripts/run-sim.sh
+
 install: $(BUILD)/celeste.rock
 	@test -n "$(IPOD)" || { echo "usage: make install IPOD=/Volumes/<ipod>"; exit 1; }
 	cp $(BUILD)/celeste.rock "$(IPOD)/.rockbox/rocks/games/"
