@@ -2,13 +2,16 @@
 // carts, plus small helpers (appr/sign/clamp/maybe) ported verbatim from
 // celeste.c so that gameplay timing/randomness matches the original.
 
-// fmodf/sinf come from Foundation normally, or from libctru's transitively
-// included <math.h> when this file is built for Embedded Swift targets (see
-// ports/3DS/common/ctru_umbrella.h) - whichever module is actually available.
+// fmodf/sinf come from Foundation normally, from libctru's transitively
+// included <math.h> when built for the 3DS (see ports/3DS/common/
+// ctru_umbrella.h), or from the Rockbox shim's own soft-float versions (see
+// ports/iPod/plugin/rockbox_shim.h) - whichever module is actually available.
 #if canImport(Foundation)
 import Foundation
 #elseif canImport(CTRU)
 import CTRU
+#elseif canImport(RB)
+import RB
 #endif
 
 struct Pico8RNG {
