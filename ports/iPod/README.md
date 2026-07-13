@@ -38,6 +38,9 @@ fires, so diagonals don't demand perfectly simultaneous presses.
 - **Docker** — the `arm-elf-eabi-gcc` 9.5.0 cross-compiler is built by
   Rockbox's `rockboxdev.sh` inside a Debian container into the `rbdev`
   Docker volume (GCC 9.5 can't be built with an arm64 macOS host natively).
+- **Homebrew GCC** (`brew install gcc`), only for `make sim` — Rockbox's
+  `configure` hardcodes `gcc-16`/`gcc-ar-16`/`cpp-16` on Darwin whenever it
+  detects Clang, assuming Homebrew's compiler is present.
 
 ## Building
 
