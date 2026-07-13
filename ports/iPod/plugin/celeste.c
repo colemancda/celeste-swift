@@ -25,6 +25,10 @@ extern int celeste_frame(unsigned char buttons);
 extern void celeste_restart(void);
 /* rockbox_shim.c (or celeste_stub.c on sim): allocator arena setup. */
 extern int celeste_shim_init(void);
+/* mixer.c: sfx.bin loading + playback (built for both device and sim --
+ * it's plain C, no ARM Swift involved). */
+extern int celeste_audio_init(void);
+extern void celeste_audio_shutdown(void);
 
 /* CelesteInputState bit order (Sources/CelesteCore/Input.swift). */
 #define CELESTE_LEFT  (1 << 0)
@@ -154,6 +158,10 @@ enum plugin_status plugin_start(const void *parameter)
     rb->lcd_update();
     rb->srand(*rb->current_tick);
 
+    /* Best-effort: a missing/unreadable sfx.bin just means a silent game,
+     * not a failure to launch. */
+    celeste_audio_init();
+
     if (celeste_init(canvas, (unsigned)*rb->current_tick) != 0) {
         rb->splash(HZ * 2, "celeste: engine init failed");
         status = PLUGIN_ERROR;
@@ -196,6 +204,7 @@ enum plugin_status plugin_start(const void *parameter)
     }
 
 out:
+    celeste_audio_shutdown();
 #ifdef HAVE_ADJUSTABLE_CPU_FREQ
     rb->cpu_boost(false);
 #endif
