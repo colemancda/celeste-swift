@@ -321,20 +321,8 @@ float sinf(float x)
     return negate ? -r : r;
 }
 
-/* ------------------------------------------------------------------------ */
-/* Audio triggers (Swift -> C). No-ops until the SFX/music phases land.      */
-/* ------------------------------------------------------------------------ */
-
-void rb_audio_sfx(int id)
-{
-    (void)id;
-}
-
-void rb_audio_music(int index, int fade_ms)
-{
-    (void)index;
-    (void)fade_ms;
-}
+/* Audio triggers (Swift -> C) live in mixer.c, which also owns sfx.bin
+ * loading and the playback mixer. */
 
 /* ------------------------------------------------------------------------ */
 /* Misc runtime gaps.                                                        */
