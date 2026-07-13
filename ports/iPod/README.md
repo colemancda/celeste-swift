@@ -90,12 +90,21 @@ Then **Plugins → Games → celeste**.
 
 ## Audio status
 
-Silent for now, by design: the PCM assets are ~9 MB and can't live in the
-512 KB plugin buffer. `RockboxAudio` already routes `music`/`sfx` calls to
-`rb_audio_*` C stubs, so the planned phases (SFX from a
-`/.rockbox/celeste/sfx.bin` blob mixed in a `pcm_play_data` callback, then
-music with fades) touch only C. The mixer must never call Swift — see the
-threading invariant in `rockbox_shim.c`.
+**SFX: done.** `tools/gen_audio.py` concatenates the SDL2 port's `snd*.wav`
+clips (uniformly 22050Hz mono PCM16 — no resampling needed) into
+`sfx.bin` (~1.5 MB) + a small `audio_tables.h` offset/length table.
+`sfx.bin` is too big for the 512 KB plugin buffer, so it isn't linked into
+`celeste.rock` — `make install`/`make sim` deploy it to
+`/.rockbox/celeste/sfx.bin` instead, and [plugin/mixer.c](plugin/mixer.c)
+loads it into the audio buffer at startup. Playback rides Rockbox's
+`mixer_channel_play_data`/`PCM_MIXER_CHAN_PLAYBACK` API (the same one
+`apps/plugins/doom/i_sound.c` uses): a small fixed set of one-shot voices
+are summed on the fly in the mixer's `get_more` callback, which — like the
+rest of the shim — never touches Swift, only plain C state.
+
+**Music: not started** — `rb_audio_music` is still a no-op. The plan is
+the same mixer with a looping voice for `music.bin` and `fadeMs` as a
+per-callback linear gain ramp.
 
 ## Targets other than the Nano 2G
 
