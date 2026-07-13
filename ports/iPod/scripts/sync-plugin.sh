@@ -17,6 +17,7 @@ cp "$HERE"/plugin/celeste.c \
    "$HERE"/plugin/celeste_stub.c \
    "$HERE"/plugin/rockbox_shim.c \
    "$HERE"/plugin/rockbox_shim.h \
+   "$HERE"/plugin/mixer.c \
    "$HERE"/plugin/SOURCES \
    "$HERE"/plugin/celeste.make \
    "$PLUGDIR/"
@@ -25,6 +26,12 @@ if [ -f "$HERE/build/libceleste.a" ]; then
     cp "$HERE/build/libceleste.a" "$PLUGDIR/"
 else
     echo "note: build/libceleste.a not present yet (fine for sim builds)"
+fi
+
+if [ -f "$HERE/build/audio_tables.h" ]; then
+    cp "$HERE/build/audio_tables.h" "$PLUGDIR/"
+else
+    echo "note: build/audio_tables.h not present yet (run make audio first)"
 fi
 
 # Register in SUBDIRS (cpp-preprocessed) and CATEGORIES, once.
