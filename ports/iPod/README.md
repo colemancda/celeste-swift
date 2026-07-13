@@ -59,14 +59,15 @@ the host), `make rockbox-tree` (fetch the pinned Rockbox checkout).
 
 ### Running the simulator
 
-`rockboxui` resolves its virtual disk (where `celeste.rock` gets installed,
-alongside every other plugin) as `./simdisk`, relative to whatever directory
-it's launched from — not to the binary's own location. Run it from inside
-`build-sim`, not from `ports/iPod`:
-
 ```sh
-cd rockbox/build-sim && ./rockboxui
+make run-sim
 ```
+
+builds (if needed) and launches `rockboxui` with `celeste.rock` already
+installed. It exists because `rockboxui` resolves its virtual disk as
+`./simdisk`, relative to whatever directory it's launched from — not to the
+binary's own location — so running it from `ports/iPod` (rather than
+`rockbox/build-sim`) silently shows an empty plugin list.
 
 Then **Plugins → Games → celeste**.
 
