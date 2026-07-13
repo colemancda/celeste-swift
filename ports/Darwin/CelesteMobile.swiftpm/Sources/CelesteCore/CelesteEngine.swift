@@ -1079,9 +1079,8 @@ public final class CelesteEngine {
     }
 
     private func destroyObject(_ obj: Entity) {
-        guard let idx = objects.firstIndex(where: { $0 === obj }) else { return }
-        objects.remove(at: idx)
-        objects.append(Entity())
+        guard objects.contains(where: { $0 === obj }) else { return }
+        obj.reset()
     }
 
     private func killPlayer(_ obj: Entity) {
