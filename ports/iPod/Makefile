@@ -85,11 +85,40 @@ $(BUILD)/audio_tables.h $(BUILD)/sfx.bin: tools/gen_audio.py $(SFX_WAV) | $(BUIL
 audio: $(BUILD)/audio_tables.h $(BUILD)/sfx.bin
 
 #---------------------------------------------------------------------------------
-# Stage 2: Rockbox. The toolchain is built once into the named Docker volume;
-# the .rock build reuses it, mounting this repo's pinned Rockbox checkout.
+# Stage 2: Rockbox. GCC 9.5 (what Rockbox pins for arm-elf-eabi) can't be
+# built natively on arm64 macOS, so there the toolchain and .rock build both
+# run inside a Linux container (the toolchain persists in a Docker volume,
+# reused across builds). On a native Linux host -- including CI -- neither
+# needs Docker at all; rockboxdev.sh and Rockbox's own build run directly,
+# which is also what makes `make rock` cheap to run in GitHub Actions with
+# $(RBDEV_PREFIX) cached between runs.
 #---------------------------------------------------------------------------------
+HOST_OS      := $(shell uname -s)
+RBDEV_PREFIX ?= $(HOME)/rbdev
+
 rockbox-tree:
 	sh scripts/get-rockbox.sh $(ROCKBOX_SHA)
+
+ifeq ($(HOST_OS),Linux)
+
+toolchain: rockbox-tree
+	export MAKEFLAGS=-j$$(nproc); \
+	yes "" | rockbox/tools/rockboxdev.sh --target=a --prefix=$(RBDEV_PREFIX) \
+	    --dlwhere=$(RBDEV_PREFIX)/dl --builddir=/tmp/rbbuild
+
+sync: rockbox-tree audio
+	sh scripts/sync-plugin.sh $(abspath rockbox)
+
+rock: swift sync
+	PATH="$(RBDEV_PREFIX)/bin:$$PATH" sh -c '\
+	    mkdir -p rockbox/build-nano2g && cd rockbox/build-nano2g && \
+	    { [ -f Makefile ] || ../tools/configure --target=ipodnano2g --type=n; } && \
+	    make -j$$(nproc) rocks && \
+	    arm-elf-eabi-size apps/plugins/celeste/celeste.elf 2>/dev/null'
+	cp rockbox/build-nano2g/apps/plugins/celeste/celeste.rock $(BUILD)/
+	@echo "built $(BUILD)/celeste.rock"
+
+else
 
 toolchain: rockbox-tree
 	$(DOCKER) volume create $(DOCKER_VOLUME)
@@ -118,6 +147,8 @@ rock: swift sync
 	    arm-elf-eabi-size apps/plugins/celeste.elf 2>/dev/null || true'
 	cp rockbox/build-nano2g/apps/plugins/celeste/celeste.rock $(BUILD)/
 	@echo "built $(BUILD)/celeste.rock"
+
+endif
 
 # UI simulator (host build; uses celeste_stub.c, needs SDL on the host).
 # Rockbox's configure hardcodes gcc-16/gcc-ar-16/cpp-16 on Darwin whenever it
