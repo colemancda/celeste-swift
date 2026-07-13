@@ -115,21 +115,29 @@ sync: rockbox-tree audio
 	sh scripts/sync-plugin.sh $(abspath rockbox)
 
 rock: swift sync
-	@# Rockbox's dependency-generation step (tools/multigcc.pl) passes every
-	@# firmware/plugin source file as one shell argv. On GitHub-hosted
-	@# runners the surrounding environment (GITHUB_*/RUNNER_*/ACTIONS_* vars,
-	@# not just PATH) is large enough that argv+environ blows the kernel's
-	@# exec limit here ("Argument list too long" / E2BIG) -- trimming PATH
-	@# alone wasn't enough, since those other vars are the bulk of it. env -i
-	@# resets to a minimal, known-small environment for just this recipe.
-	env -i \
-	    PATH="$(RBDEV_PREFIX)/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-	    HOME="$$HOME" \
-	    sh -c '\
-	    mkdir -p rockbox/build-nano2g && cd rockbox/build-nano2g && \
-	    { [ -f Makefile ] || ../tools/configure --target=ipodnano2g --type=n; } && \
-	    make -j$$(nproc) rocks && \
-	    arm-elf-eabi-size apps/plugins/celeste/celeste.elf 2>/dev/null'
+	sh scripts/clean-host-tools.sh
+	@# Native `make rocks` hits "Argument list too long" on GitHub-hosted
+	@# Linux runners: Rockbox's dependency-generation step (tools/multigcc.pl)
+	@# embeds the full absolute source path in every one of its thousands of
+	@# file arguments, and GH's deeply-nested checkout path
+	@# (/home/runner/work/<repo>/<repo>/...) is long enough on its own to
+	@# blow the kernel's exec argv limit. Two environment-trimming attempts
+	@# (PATH only, then env -i stripping everything) both failed identically
+	@# -- proof the environment was never the dominant contributor, the
+	@# checkout path length was. Running just this step in a container,
+	@# mounted at the short in-container path /rockbox (exactly like the
+	@# non-Linux branch below, which is why it never hit this), sidesteps
+	@# the problem regardless of how deep the host checkout path is.
+	$(DOCKER) run --rm -v $(RBDEV_PREFIX):/opt/rbdev:ro \
+	    -v $(abspath rockbox):/rockbox $(DOCKER_IMAGE) bash -c '\
+	    set -e; apt-get update -qq; \
+	    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+	        build-essential perl zip unzip wget ca-certificates >/dev/null; \
+	    export PATH=/opt/rbdev/bin:$$PATH; \
+	    mkdir -p /rockbox/build-nano2g; cd /rockbox/build-nano2g; \
+	    [ -f Makefile ] || ../tools/configure --target=ipodnano2g --type=n; \
+	    make -j$$(nproc) rocks; \
+	    arm-elf-eabi-size apps/plugins/celeste/celeste.elf 2>/dev/null || true'
 	cp rockbox/build-nano2g/apps/plugins/celeste/celeste.rock $(BUILD)/
 	@echo "built $(BUILD)/celeste.rock"
 
