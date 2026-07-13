@@ -57,6 +57,19 @@ Useful individual targets: `make swift` (just the audited `libceleste.a`),
 `make sim` (Rockbox UI simulator with the C test-pattern stub — needs SDL on
 the host), `make rockbox-tree` (fetch the pinned Rockbox checkout).
 
+### Running the simulator
+
+`rockboxui` resolves its virtual disk (where `celeste.rock` gets installed,
+alongside every other plugin) as `./simdisk`, relative to whatever directory
+it's launched from — not to the binary's own location. Run it from inside
+`build-sim`, not from `ports/iPod`:
+
+```sh
+cd rockbox/build-sim && ./rockboxui
+```
+
+Then **Plugins → Games → celeste**.
+
 ## How the pieces fit
 
 1. `make swift` compiles all of `Sources/CelesteCore` + `source/*.swift` in
