@@ -87,3 +87,7 @@ node_modules/
 .vscode/
 .claude/
 
+
+# iPod/Rockbox port build inputs/outputs
+/ports/iPod/rockbox/
+/ports/iPod/build/
