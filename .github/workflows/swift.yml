@@ -61,22 +61,6 @@ jobs:
         xcodebuild build -project ports/Darwin/Celeste.xcodeproj -scheme Celeste-macOS \
           -configuration Debug -skipPackagePluginValidation
 
-  darwin-tvos:
-    name: tvOS (Xcode)
-    runs-on: macos-15
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Xcode Version
-      run: xcodebuild -version
-    - name: Download tvOS platform
-      run: xcodebuild -downloadPlatform tvOS
-    - name: Build Celeste-tvOS
-      run: |
-        xcodebuild build -project ports/Darwin/Celeste.xcodeproj -scheme Celeste-tvOS \
-          -configuration Debug -destination "generic/platform=tvOS Simulator" \
-          -skipPackagePluginValidation
-
   n3ds:
     name: Nintendo 3DS (build + upload ROM)
     runs-on: macos-15
