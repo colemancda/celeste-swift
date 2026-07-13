@@ -120,3 +120,28 @@ jobs:
         name: celeste-3ds
         path: ports/3DS/Celeste.3dsx
         if-no-files-found: error
+
+  ipod-rockbox-swift:
+    name: iPod (Rockbox port, armv4t Embedded Swift)
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # armv4t-none-none-eabi Embedded stdlib ships in swift-6.3.2-RELEASE and
+    # newer; resolve the latest nightly the same way the 3DS job does.
+    - name: Install Swift nightly toolchain
+      run: |
+        curl -sL https://download.swift.org/development/xcode/latest-build.yml -o /tmp/latest-build.yml
+        SNAPSHOT_DIR=$(awk -F': ' '/^dir:/{print $2}' /tmp/latest-build.yml)
+        SNAPSHOT_PKG=$(awk -F': ' '/^download:/{print $2}' /tmp/latest-build.yml)
+        curl -L "https://download.swift.org/development/xcode/${SNAPSHOT_DIR}/${SNAPSHOT_PKG}" -o /tmp/swift-toolchain.pkg
+        sudo installer -pkg /tmp/swift-toolchain.pkg -target /
+        TOOLCHAIN_DIR=$(ls -d /Library/Developer/Toolchains/swift-*.xctoolchain | head -1)
+        echo "SWIFTC=$TOOLCHAIN_DIR/usr/bin/swiftc" >> "$GITHUB_ENV"
+
+    # Builds libceleste.a and runs the undefined-symbol allowlist audit; the
+    # full celeste.rock (Rockbox in-tree link) is a local/nightly concern
+    # since it needs the ~40min arm-elf-eabi toolchain build.
+    - name: Build libceleste.a (armv4t) + symbol audit
+      run: make -C ports/iPod swift SWIFTC="$SWIFTC"
