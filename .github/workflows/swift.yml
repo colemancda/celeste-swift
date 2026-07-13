@@ -195,17 +195,15 @@ jobs:
       run: make -C ports/iPod toolchain
 
     # Rockbox's own dependency-generation step (tools/multigcc.pl) passes
-    # every firmware/plugin source file as one shell argv. GitHub's hosted
-    # runners ship a PATH bloated with dozens of preinstalled SDK
-    # directories; that extra environ size is enough to push argv+environ
-    # over the kernel's exec limit here, failing with "Argument list too
-    # long" (E2BIG) -- not something in our Makefile, a runner-environment
-    # sensitivity in unmodified Rockbox tooling. Trimming PATH to just
-    # what this step needs resolves it.
+    # every firmware/plugin source file as one shell argv. On GitHub-hosted
+    # runners argv+environ is big enough to blow the kernel's exec limit
+    # here ("Argument list too long" / E2BIG) -- not the PATH alone (that
+    # fix wasn't enough on its own), the many GITHUB_*/RUNNER_*/ACTIONS_*
+    # vars these runners inject. ports/iPod/Makefile's `rock` target resets
+    # to a minimal environment (env -i) around just the nested `make rocks`
+    # call that hits this, so no special handling is needed here.
     - name: Build celeste.rock
       run: make -C ports/iPod rock SWIFTC="$SWIFTC"
-      env:
-        PATH: /home/runner/rbdev/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
     - name: Upload celeste.rock
       uses: actions/upload-artifact@v4
