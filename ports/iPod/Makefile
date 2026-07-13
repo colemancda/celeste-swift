@@ -115,7 +115,17 @@ sync: rockbox-tree audio
 	sh scripts/sync-plugin.sh $(abspath rockbox)
 
 rock: swift sync
-	PATH="$(RBDEV_PREFIX)/bin:$$PATH" sh -c '\
+	@# Rockbox's dependency-generation step (tools/multigcc.pl) passes every
+	@# firmware/plugin source file as one shell argv. On GitHub-hosted
+	@# runners the surrounding environment (GITHUB_*/RUNNER_*/ACTIONS_* vars,
+	@# not just PATH) is large enough that argv+environ blows the kernel's
+	@# exec limit here ("Argument list too long" / E2BIG) -- trimming PATH
+	@# alone wasn't enough, since those other vars are the bulk of it. env -i
+	@# resets to a minimal, known-small environment for just this recipe.
+	env -i \
+	    PATH="$(RBDEV_PREFIX)/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+	    HOME="$$HOME" \
+	    sh -c '\
 	    mkdir -p rockbox/build-nano2g && cd rockbox/build-nano2g && \
 	    { [ -f Makefile ] || ../tools/configure --target=ipodnano2g --type=n; } && \
 	    make -j$$(nproc) rocks && \
