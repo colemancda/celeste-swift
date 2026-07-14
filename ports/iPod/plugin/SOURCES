@@ -1,0 +1,7 @@
+celeste.c
+mixer.c
+#ifdef SIMULATOR
+celeste_stub.c
+#else
+rockbox_shim.c
+#endif

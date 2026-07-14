@@ -1,0 +1,4 @@
+module CRockbox {
+    header "rockbox_shim.h"
+    export *
+}

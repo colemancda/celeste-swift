@@ -61,22 +61,6 @@ jobs:
         xcodebuild build -project ports/Darwin/Celeste.xcodeproj -scheme Celeste-macOS \
           -configuration Debug -skipPackagePluginValidation
 
-  darwin-tvos:
-    name: tvOS (Xcode)
-    runs-on: macos-15
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Xcode Version
-      run: xcodebuild -version
-    - name: Download tvOS platform
-      run: xcodebuild -downloadPlatform tvOS
-    - name: Build Celeste-tvOS
-      run: |
-        xcodebuild build -project ports/Darwin/Celeste.xcodeproj -scheme Celeste-tvOS \
-          -configuration Debug -destination "generic/platform=tvOS Simulator" \
-          -skipPackagePluginValidation
-
   n3ds:
     name: Nintendo 3DS (build + upload ROM)
     runs-on: macos-15
@@ -119,4 +103,95 @@ jobs:
       with:
         name: celeste-3ds
         path: ports/3DS/Celeste.3dsx
+        if-no-files-found: error
+
+  ipod-rockbox-swift:
+    name: iPod (Rockbox port, armv4t Embedded Swift)
+    runs-on: macos-15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # armv4t-none-none-eabi Embedded stdlib ships in swift-6.3.2-RELEASE and
+    # newer; resolve the latest nightly the same way the 3DS job does.
+    - name: Install Swift nightly toolchain
+      run: |
+        curl -sL https://download.swift.org/development/xcode/latest-build.yml -o /tmp/latest-build.yml
+        SNAPSHOT_DIR=$(awk -F': ' '/^dir:/{print $2}' /tmp/latest-build.yml)
+        SNAPSHOT_PKG=$(awk -F': ' '/^download:/{print $2}' /tmp/latest-build.yml)
+        curl -L "https://download.swift.org/development/xcode/${SNAPSHOT_DIR}/${SNAPSHOT_PKG}" -o /tmp/swift-toolchain.pkg
+        sudo installer -pkg /tmp/swift-toolchain.pkg -target /
+        TOOLCHAIN_DIR=$(ls -d /Library/Developer/Toolchains/swift-*.xctoolchain | head -1)
+        echo "SWIFTC=$TOOLCHAIN_DIR/usr/bin/swiftc" >> "$GITHUB_ENV"
+
+    # Builds libceleste.a and runs the undefined-symbol allowlist audit --
+    # fast, so this runs on every push/PR. The full celeste.rock link
+    # (ipod-rockbox-full below) needs the arm-elf-eabi cross toolchain and
+    # runs less often.
+    - name: Build libceleste.a (armv4t) + symbol audit
+      run: make -C ports/iPod swift SWIFTC="$SWIFTC"
+
+  ipod-rockbox-full:
+    name: iPod (Rockbox port, full celeste.rock)
+    runs-on: ubuntu-22.04
+    # The arm-elf-eabi toolchain build is the expensive part here (~30-40min
+    # cold; the cache below makes warm runs a couple minutes). Keep it off
+    # the per-PR critical path -- run on pushes to main and on demand.
+    if: github.event_name != 'pull_request'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install build prerequisites
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq build-essential texinfo flex bison wget curl \
+          xz-utils bzip2 patch file ca-certificates zip automake autoconf libtool \
+          libtool-bin perl python3
+
+    # Same armv4t-none-none-eabi requirement as the swift-only job above,
+    # just resolved against the Linux snapshot channel.
+    - name: Install Swift nightly toolchain
+      run: |
+        curl -sL https://download.swift.org/development/ubuntu2204/latest-build.yml -o /tmp/latest-build.yml
+        SNAPSHOT_DIR=$(awk -F': ' '/^dir:/{print $2}' /tmp/latest-build.yml)
+        SNAPSHOT_PKG=$(awk -F': ' '/^download:/{print $2}' /tmp/latest-build.yml)
+        curl -L "https://download.swift.org/development/ubuntu2204/${SNAPSHOT_DIR}/${SNAPSHOT_PKG}" -o /tmp/swift-toolchain.tar.gz
+        mkdir -p /tmp/swift-toolchain
+        tar -xzf /tmp/swift-toolchain.tar.gz -C /tmp/swift-toolchain --strip-components=1
+        echo "SWIFTC=/tmp/swift-toolchain/usr/bin/swiftc" >> "$GITHUB_ENV"
+
+    - name: Fetch pinned Rockbox checkout
+      run: make -C ports/iPod rockbox-tree
+
+    # rockboxdev.sh itself doesn't version its output, so the cache key is
+    # pinned to the Rockbox checkout (which pins the toolchain versions it
+    # builds) plus the pinned SHA already baked into the Makefile.
+    - name: Cache arm-elf-eabi cross toolchain
+      id: rbdev-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/rbdev
+        key: rbdev-toolchain-ipodnano2g-${{ hashFiles('ports/iPod/rockbox/tools/rockboxdev.sh') }}
+
+    - name: Build arm-elf-eabi cross toolchain
+      if: steps.rbdev-cache.outputs.cache-hit != 'true'
+      run: make -C ports/iPod toolchain
+
+    # Rockbox's own dependency-generation step (tools/multigcc.pl) passes
+    # every firmware/plugin source file as one shell argv. On GitHub-hosted
+    # runners argv+environ is big enough to blow the kernel's exec limit
+    # here ("Argument list too long" / E2BIG) -- not the PATH alone (that
+    # fix wasn't enough on its own), the many GITHUB_*/RUNNER_*/ACTIONS_*
+    # vars these runners inject. ports/iPod/Makefile's `rock` target resets
+    # to a minimal environment (env -i) around just the nested `make rocks`
+    # call that hits this, so no special handling is needed here.
+    - name: Build celeste.rock
+      run: make -C ports/iPod rock SWIFTC="$SWIFTC"
+
+    - name: Upload celeste.rock
+      uses: actions/upload-artifact@v4
+      with:
+        name: celeste-ipod-rock
+        path: ports/iPod/build/celeste.rock
         if-no-files-found: error
